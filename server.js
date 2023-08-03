@@ -19,15 +19,14 @@ app.use(express.urlencoded({ extended: true }));
 const db = require("./app/models");
 const Role = db.role;
 
+db.mongoose.set("strictQuery", false);
+
 db.mongoose
   //.connect(`mongodb://${dbConfig.HOST}:${dbConfig.PORT}/${dbConfig.DB}`, {
-  .connect(
-    `mongodb+srv://junaid:AhJLltOzx83NgHGt@cluster0.cseadd9.mongodb.net/${dbConfig.DB}`,
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    }
-  )
+  .connect(`${dbConfig.URI}/${dbConfig.DB}`, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => {
     console.log("Successfully connect to MongoDB.");
     initial();
