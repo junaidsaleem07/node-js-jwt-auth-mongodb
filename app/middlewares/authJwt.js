@@ -18,6 +18,18 @@ verifyToken = (req, res, next) => {
       });
     }
     req.userId = decoded.id;
+    User.findById(req.userId).exec((err, user) => {
+      if (err) {
+        res.status(500).send({ message: err });
+        return;
+      }
+
+      if (user.userLoggedIn == false) {
+        return res
+          .status(401)
+          .send({ message: "User already signed out. Please sign in again!" });
+      }
+    });
     next();
   });
 };
@@ -36,6 +48,10 @@ isAdmin = (req, res, next) => {
       (err, roles) => {
         if (err) {
           res.status(500).send({ message: err });
+          return;
+        }
+
+        if (user.userLoggedIn == false) {
           return;
         }
 
@@ -67,6 +83,10 @@ isModerator = (req, res, next) => {
       (err, roles) => {
         if (err) {
           res.status(500).send({ message: err });
+          return;
+        }
+
+        if (user.userLoggedIn == false) {
           return;
         }
 

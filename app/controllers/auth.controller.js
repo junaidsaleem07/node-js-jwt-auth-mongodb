@@ -11,6 +11,7 @@ exports.signup = (req, res) => {
     username: req.body.username,
     email: req.body.email,
     password: bcrypt.hashSync(req.body.password, 8),
+    userLoggedIn: false,
   });
 
   user.save((err, user) => {
@@ -100,6 +101,21 @@ exports.signin = (req, res) => {
       for (let i = 0; i < user.roles.length; i++) {
         authorities.push("ROLE_" + user.roles[i].name.toUpperCase());
       }
+
+      if (user.userLoggedIn == true) {
+        return res.status(401).send({
+          message: "User already logged in!",
+        });
+      }
+
+      user.userLoggedIn = true;
+      user.save((err) => {
+        if (err) {
+          res.status(500).send({ message: err });
+          return;
+        }
+      });
+
       res.status(200).send({
         id: user._id,
         username: user.username,
@@ -112,10 +128,44 @@ exports.signin = (req, res) => {
 
 exports.signout = async (req, res) => {
   try {
-    req.session = null;
-    return res.status(200).send({
-      message: "You've been signed out!",
-    });
+    User.findOne({
+      username: req.body.username,
+    })
+      .populate("roles", "-__v")
+      .exec((err, user) => {
+        if (err) {
+          res.status(500).send({ message: err });
+          return;
+        }
+
+        if (!user) {
+          return res.status(404).send({ message: "User Not found." });
+        }
+
+        var passwordIsValid = bcrypt.compareSync(
+          req.body.password,
+          user.password
+        );
+
+        if (!passwordIsValid) {
+          return res.status(401).send({
+            accessToken: null,
+            message: "Invalid Password!",
+          });
+        }
+
+        user.userLoggedIn = false;
+        user.save((err) => {
+          if (err) {
+            res.status(500).send({ message: err });
+            return;
+          }
+        });
+
+        return res.status(200).send({
+          message: "You've been signed out!",
+        });
+      });
   } catch (err) {
     this.next(err);
   }
